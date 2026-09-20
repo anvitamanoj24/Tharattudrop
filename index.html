@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tharattu.Drop()</title>
+<style>
+  :root{
+    --bg-top:#12142B;
+    --bg-bottom:#1D2247;
+    --panel:rgba(255,255,255,0.06);
+    --panel-border:rgba(255,255,255,0.14);
+    --ink:#F5F0E8;
+    --ink-muted:#9C9BC4;
+    --glow:#F2B880;
+    --glow-soft:#E8A0BF;
+    --calm:#8FBC94;
+    --alert:#FF6B6B;
+    --radius:22px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    background:radial-gradient(ellipse at 50% -10%, #262B57 0%, var(--bg-top) 45%, var(--bg-bottom) 100%);
+    font-family:'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  @font-face{
+    font-family:'Fraunces';
+    src:local('Georgia');
+  }
+
+  .stage{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:44px 20px 80px;
+  }
+
+  .brand{
+    text-align:center;
+    margin-bottom:36px;
+  }
+  .brand .mark{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    font-size:clamp(28px, 7vw, 38px);
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .brand .mark span{ color:var(--glow); }
+  .brand .sub{
+    margin:8px 0 0;
+    color:var(--ink-muted);
+    font-size:14px;
+    letter-spacing:0.02em;
+  }
+
+  /* Breathing orb — the one orchestrated motion on the page */
+  .orb-wrap{
+    position:relative;
+    width:168px;
+    height:168px;
+    margin-bottom:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .orb-ring{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    border:1px solid rgba(242,184,128,0.25);
+    animation:breathe 4.2s ease-in-out infinite;
+  }
+  .orb-ring.delay{ animation-delay:1.4s; border-color:rgba(232,160,191,0.2); }
+  .orb-core{
+    width:104px;
+    height:104px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #FFE3BE 0%, var(--glow) 45%, var(--glow-soft) 100%);
+    box-shadow:0 0 46px rgba(242,184,128,0.45);
+    animation:breathe-core 4.2s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{ transform:scale(0.92); opacity:0.5; }
+    50%{ transform:scale(1.14); opacity:0; }
+  }
+  @keyframes breathe-core{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.06); }
+  }
+
+  .card{
+    width:100%;
+    max-width:420px;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:var(--radius);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    padding:22px 24px;
+    margin-bottom:16px;
+  }
+
+  .status-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .status-label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    color:var(--ink-muted);
+  }
+  .status-value{
+    font-family:'SF Mono','Courier New',monospace;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .dot{
+    width:8px; height:8px; border-radius:50%;
+    background:var(--calm);
+    box-shadow:0 0 8px var(--calm);
+  }
+  .dot.alert{ background:var(--alert); box-shadow:0 0 10px var(--alert); }
+
+  .divider{
+    height:1px;
+    background:rgba(255,255,255,0.08);
+    margin:16px 0;
+  }
+
+  .mini-stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .mini-stat .num{
+    font-family:'SF Mono','Courier New',monospace;
+    font-size:20px;
+  }
+  .mini-stat .label{
+    font-size:11.5px;
+    color:var(--ink-muted);
+    margin-top:2px;
+  }
+
+  .card-title{
+    font-size:13px;
+    color:var(--ink-muted);
+    letter-spacing:0.06em;
+    margin:0 0 14px;
+  }
+
+  audio{
+    width:100%;
+    height:38px;
+    border-radius:12px;
+  }
+  audio::-webkit-media-controls-panel{
+    background:rgba(255,255,255,0.04);
+  }
+
+  .bars{
+    display:flex;
+    align-items:flex-end;
+    gap:4px;
+    height:28px;
+    margin:14px 0 4px;
+  }
+  .bars span{
+    flex:1;
+    background:linear-gradient(180deg, var(--glow), var(--glow-soft));
+    border-radius:2px;
+    height:20%;
+    transition:height 0.12s ease;
+  }
+
+  .btn{
+    width:100%;
+    padding:14px 18px;
+    border-radius:14px;
+    border:1px solid rgba(255,107,107,0.4);
+    background:rgba(255,107,107,0.12);
+    color:#FFD9D9;
+    font-family:inherit;
+    font-size:14.5px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.05s ease;
+  }
+  .btn:hover{ background:rgba(255,107,107,0.2); }
+  .btn:active{ transform:scale(0.98); }
+
+  .footnote{
+    max-width:420px;
+    text-align:center;
+    color:var(--ink-muted);
+    font-size:12px;
+    line-height:1.6;
+    margin-top:6px;
+    padding:0 12px;
+  }
+
+  /* Full-screen RGB alert overlay */
+  #alertOverlay{
+    position:fixed;
+    inset:0;
+    z-index:999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:18px;
+  }
+  #alertOverlay.active{ display:flex; }
+  #alertOverlay .msg{
+    font-family:'Fraunces', Georgia, serif;
+    font-size:clamp(24px, 6vw, 36px);
+    color:#fff;
+    text-shadow:0 2px 18px rgba(0,0,0,0.35);
+    text-align:center;
+    padding:0 20px;
+  }
+  #alertOverlay .dismiss{
+    padding:12px 26px;
+    border-radius:999px;
+    border:1.5px solid rgba(255,255,255,0.7);
+    background:rgba(0,0,0,0.15);
+    color:#fff;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .orb-ring, .orb-core{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <div class="brand">
+    <p class="mark">tharattu.<span>drop()</span></p>
+    <p class="sub">cry-aware cradle companion</p>
+  </div>
+
+  <div class="orb-wrap">
+    <div class="orb-ring"></div>
+    <div class="orb-ring delay"></div>
+    <div class="orb-core"></div>
+  </div>
+
+  <div class="card">
+    <div class="status-row">
+      <span class="status-label">Room status</span>
+      <span class="status-value"><span class="dot" id="statusDot"></span><span id="statusText">Listening</span></span>
+    </div>
+    <div class="divider"></div>
+    <div class="mini-stats">
+      <div class="mini-stat">
+        <div class="num" id="micLevel">—</div>
+        <div class="label">Mic level</div>
+      </div>
+      <div class="mini-stat">
+        <div class="num" id="rockCount">0</div>
+        <div class="label">Rocks today</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Soothing track</p>
+    <div class="bars" id="bars"></div>
+    <audio id="lullaby" controls preload="auto"></audio>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Manual test</p>
+    <button class="btn" id="testBtn">Simulate cry detected</button>
+  </div>
+
+  <p class="footnote">
+    Runs standalone from the ESP32's own web server — the lullaby clip is embedded as base64,
+    so playback and the alert screen work even with no internet connection.
+  </p>
+
+</div>
+
+<div id="alertOverlay">
+  <div class="msg" id="alertMsg">Cry detected — rocking now</div>
+  <button class="dismiss" id="dismissBtn">Dismiss</button>
+</div>
+
+<!-- audio_data.js defines AUDIO_BASE64 -->
+<script src="audio_data.js"></script>
+<script>
+(function(){
+
+  var audioEl = document.getElementById('lullaby');
+  audioEl.src = AUDIO_BASE64;
+
+  var overlay = document.getElementById('alertOverlay');
+  var statusDot = document.getElementById('statusDot');
+  var statusText = document.getElementById('statusText');
+  var rockCountEl = document.getElementById('rockCount');
+  var micLevelEl = document.getElementById('micLevel');
+  var bars = document.getElementById('bars');
+  var rockCount = 0;
+  var flashTimer = null;
+
+  // Build the equalizer-style bar row
+  var BAR_COUNT = 24;
+  for (var i = 0; i < BAR_COUNT; i++){
+    var s = document.createElement('span');
+    bars.appendChild(s);
+  }
+  var barEls = bars.querySelectorAll('span');
+
+  // Idle bar wobble while nothing is happening — subtle, not full RGB alert
+  function idleBars(){
+    for (var i = 0; i < barEls.length; i++){
+      var h = 15 + Math.random() * 20;
+      barEls[i].style.height = h + '%';
+    }
+  }
+  setInterval(idleBars, 260);
+
+  // Full-screen RGB flashing cycle used only during an active alert.
+  var HUES = ['#FF6B6B', '#F2B880', '#E8A0BF', '#8FBC94', '#7FB2E5'];
+  var hueIndex = 0;
+  function flashStep(){
+    hueIndex = (hueIndex + 1) % HUES.length;
+    overlay.style.background = HUES[hueIndex];
+    for (var i = 0; i < barEls.length; i++){
+      barEls[i].style.height = (30 + Math.random() * 65) + '%';
+    }
+  }
+
+  function startAlert(reason){
+    reason = reason || 'Cry detected — rocking now';
+    document.getElementById('alertMsg').textContent = reason;
+    overlay.classList.add('active');
+    statusDot.classList.add('alert');
+    statusText.textContent = 'Cry detected';
+    rockCount += 1;
+    rockCountEl.textContent = rockCount;
+
+    clearInterval(flashTimer);
+    flashTimer = setInterval(flashStep, 220);
+
+    audioEl.currentTime = 0;
+    audioEl.play().catch(function(){ /* needs a user tap on first load — that's fine */ });
+  }
+
+  function stopAlert(){
+    overlay.classList.remove('active');
+    statusDot.classList.remove('alert');
+    statusText.textContent = 'Listening';
+    clearInterval(flashTimer);
+    audioEl.pause();
+  }
+
+  document.getElementById('testBtn').addEventListener('click', function(){
+    startAlert('Cry detected — rocking now');
+  });
+  document.getElementById('dismissBtn').addEventListener('click', stopAlert);
+
+  // ---- Live hardware hook -------------------------------------------------
+  // The ESP32 firmware should expose a small JSON status endpoint, e.g.:
+  //   GET /status  ->  {"cry": true, "level": 812, "rocks": 4}
+  // Poll it from here so the page reacts to real sensor events, not just
+  // the manual test button. This fails silently on a plain static-file demo
+  // (no backend attached), which is expected.
+  function poll(){
+    fetch('/status', {cache:'no-store'}).then(function(r){ return r.json(); })
+      .then(function(data){
+        if (typeof data.level === 'number') micLevelEl.textContent = data.level;
+        if (typeof data.rocks === 'number' && data.rocks !== rockCount){
+          rockCount = data.rocks;
+          rockCountEl.textContent = rockCount;
+        }
+        if (data.cry && overlay.className.indexOf('active') === -1){
+          startAlert('Cry detected — rocking now');
+        } else if (!data.cry && overlay.className.indexOf('active') !== -1){
+          stopAlert();
+        }
+      })
+      .catch(function(){ /* no backend reachable — manual demo mode */ });
+  }
+  setInterval(poll, 1500);
+
+})();
+</script>
+
+</body>
+</html>
