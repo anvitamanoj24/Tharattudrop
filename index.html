@@ -307,13 +307,36 @@
   <button class="dismiss" id="dismissBtn">Dismiss</button>
 </div>
 
-<!-- audio_data.js defines AUDIO_BASE64 -->
-<script src="audio_data.js"></script>
+<!-- audio_data.js defines AUDIO_BASE64. Loaded with onerror so a missing/404'd
+     file can never crash this page's script — it just disables audio. -->
+<script src="audio_data.js" onerror="window.__AUDIO_LOAD_FAILED = true;"></script>
 <script>
 (function(){
 
   var audioEl = document.getElementById('lullaby');
-  audioEl.src = AUDIO_BASE64;
+  var audioReady = false;
+
+  if (window.__AUDIO_LOAD_FAILED || typeof AUDIO_BASE64 === 'undefined') {
+    console.warn('[tharattu] audio_data.js did not load — check that it was uploaded to LittleFS/SPIFFS alongside index.html. RGB alert will still work; audio is disabled.');
+  } else {
+    audioEl.src = AUDIO_BASE64;
+    audioReady = true;
+  }
+
+  // Browsers block audio.play() with sound unless it follows a real user
+  // gesture. One silent unlock play/pause on the first tap anywhere lets
+  // later *programmatic* play() calls (e.g. from an automatic /status
+  // trigger) actually produce sound for the rest of the session.
+  var audioUnlocked = false;
+  function unlockAudioOnce(){
+    if (audioUnlocked || !audioReady) return;
+    audioUnlocked = true;
+    audioEl.play().then(function(){ audioEl.pause(); audioEl.currentTime = 0; }).catch(function(){});
+    document.removeEventListener('click', unlockAudioOnce);
+    document.removeEventListener('touchstart', unlockAudioOnce);
+  }
+  document.addEventListener('click', unlockAudioOnce);
+  document.addEventListener('touchstart', unlockAudioOnce);
 
   var overlay = document.getElementById('alertOverlay');
   var statusDot = document.getElementById('statusDot');
@@ -364,8 +387,12 @@
     clearInterval(flashTimer);
     flashTimer = setInterval(flashStep, 220);
 
-    audioEl.currentTime = 0;
-    audioEl.play().catch(function(){ /* needs a user tap on first load — that's fine */ });
+    if (audioReady) {
+      audioEl.currentTime = 0;
+      audioEl.play().catch(function(err){
+        console.warn('[tharattu] audio.play() blocked — tap anywhere on the page once to unlock sound.', err);
+      });
+    }
   }
 
   function stopAlert(){
@@ -373,7 +400,7 @@
     statusDot.classList.remove('alert');
     statusText.textContent = 'Listening';
     clearInterval(flashTimer);
-    audioEl.pause();
+    if (audioReady) audioEl.pause();
   }
 
   document.getElementById('testBtn').addEventListener('click', function(){
