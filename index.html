@@ -1,495 +1,641 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problems We Faced · THARATTU.DROP()</title>
+<meta name="description" content="The debugging journey behind THARATTU.DROP(): an ESP32 lullaby cradle that rocks when it hears a baby cry.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Nunito+Sans:wght@400;600;700&family=Noto+Serif+Malayalam:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #0c1030;
+    --indigo: #1a1f4d;
+    --dusk: #2b2a63;
+    --moon: #f4ead0;
+    --text: #e9e4d4;
+    --muted: #a9a8c9;
+    --gold: #e0b04f;
+    --gold-soft: rgba(224, 176, 79, .35);
+    --ember: #f0894a;
+    --led-a: #ff6b8b;
+    --led-b: #6be3a5;
+    --led-c: #7aa8ff;
+    --sky-top: #0c1030;
+    --sky-bottom: #241c55;
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mal: "Noto Serif Malayalam", "Fraunces", serif;
+  }
 
-  <title>Problems We Faced</title>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 1.0625rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
 
-  <style>
-    :root {
-      --bg: #0b1020;
-      --card: #141b2f;
-      --card-2: #10172a;
-      --text: #f5f1e8;
-      --muted: #aeb6c8;
-      --accent: #d19a66;
-      --line: #2b3550;
-    }
+  /* ---------- sky ---------- */
+  .sky {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
+  }
+  .stars {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity .4s linear;
+  }
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: var(--moon);
+    opacity: .7;
+    animation: twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .25; }
+    50% { opacity: .9; }
+  }
 
-    * {
-      box-sizing: border-box;
-    }
+  /* ---------- kasavu border ---------- */
+  .kasavu {
+    height: 12px;
+    border-top: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+    background:
+      repeating-linear-gradient(90deg, var(--gold) 0 2px, transparent 2px 9px) center / 100% 4px no-repeat;
+    opacity: .85;
+  }
 
-    body {
-      margin: 0;
-      font-family: Inter, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.65;
-    }
+  /* ---------- layout ---------- */
+  .wrap {
+    width: min(100% - 2.5rem, 46rem);
+    margin-inline: auto;
+  }
 
-    .container {
-      width: min(1000px, 92%);
-      margin: 0 auto;
-      padding: 60px 0;
-    }
+  /* ---------- hero ---------- */
+  .hero {
+    width: min(100% - 2.5rem, 68rem);
+    margin-inline: auto;
+    padding: 4rem 0 3.5rem;
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 2rem;
+    align-items: center;
+    min-height: 92vh;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    margin: 0 0 1.5rem;
+    font-family: var(--serif);
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--gold);
+    font-size: 1.05rem;
+  }
+  .brand .mal {
+    font-family: var(--mal);
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--moon);
+    opacity: .8;
+  }
+  h1 {
+    margin: 0 0 1.5rem;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(2.8rem, 8vw, 5.6rem);
+    line-height: .98;
+    letter-spacing: -.02em;
+    color: var(--moon);
+    font-variation-settings: "opsz" 144;
+  }
+  .lede {
+    max-width: 30rem;
+    margin: 0 0 1.75rem;
+    color: var(--text);
+    font-size: 1.15rem;
+  }
+  .gloss {
+    margin: 0;
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1rem;
+  }
 
-    header {
-      margin-bottom: 42px;
-    }
+  .cradle-stage {
+    position: relative;
+    width: 100%;
+    max-width: 26rem;
+    justify-self: center;
+  }
+  .cradle-stage svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .swing {
+    transform-origin: 150px 22px;
+    animation: rock 3.2s ease-in-out infinite alternate;
+  }
+  @keyframes rock {
+    from { transform: rotate(-8deg); }
+    to   { transform: rotate(8deg); }
+  }
+  .ring {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 1.5;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ripple 5.4s ease-out infinite;
+  }
+  .ring:nth-of-type(2) { animation-delay: 1.8s; }
+  .ring:nth-of-type(3) { animation-delay: 3.6s; }
+  @keyframes ripple {
+    0%   { transform: scale(.55); opacity: .0; }
+    12%  { opacity: .55; }
+    100% { transform: scale(1.7); opacity: 0; }
+  }
 
-    .eyebrow {
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
+  .scroll-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: 2.5rem;
+    color: var(--muted);
+    font-size: .95rem;
+    text-decoration: none;
+  }
+  .scroll-hint:hover, .scroll-hint:focus-visible { color: var(--moon); }
 
-    h1 {
-      font-size: clamp(2.2rem, 5vw, 4rem);
-      line-height: 1.1;
-      margin: 0 0 18px;
-    }
+  /* ---------- night timeline ---------- */
+  .night {
+    list-style: none;
+    margin: 0;
+    padding: 4rem 0 2rem;
+    position: relative;
+  }
+  .night::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 4rem;
+    bottom: 2rem;
+    width: 2px;
+    background: linear-gradient(180deg, transparent, var(--gold-soft) 6%, var(--gold-soft) 94%, transparent);
+  }
+  .entry {
+    position: relative;
+    padding: 0 0 4rem 3.6rem;
+  }
+  .entry::before {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: .55rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #fff3c4 0 25%, var(--gold) 60%, #b07d22);
+    box-shadow: 0 0 0 5px rgba(224, 176, 79, .12), 0 0 22px 4px rgba(240, 137, 74, .45);
+  }
+  .hour {
+    display: block;
+    margin: 0 0 .35rem;
+    color: var(--gold);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.05rem;
+  }
+  h2 {
+    margin: 0 0 1rem;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4vw, 2.3rem);
+    line-height: 1.15;
+    color: var(--moon);
+    letter-spacing: -.01em;
+  }
+  .entry p { margin: 0 0 1rem; max-width: 38rem; }
+  .entry ul {
+    margin: 0 0 1.25rem;
+    padding: 0;
+    list-style: none;
+    max-width: 38rem;
+  }
+  .entry li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: .3rem;
+  }
+  .entry li::before {
+    content: "";
+    position: absolute;
+    left: .15rem;
+    top: .72em;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    transform: rotate(45deg);
+  }
 
-    .intro {
-      color: var(--muted);
-      font-size: 1.08rem;
-      max-width: 780px;
-    }
+  .entry .note {
+    max-width: 38rem;
+    margin: 1.5rem 0 0;
+    padding: 1rem 1.2rem 1rem 1.3rem;
+    border-left: 3px solid var(--gold);
+    border-radius: 0 10px 10px 0;
+    background: rgba(244, 234, 208, .06);
+    color: var(--moon);
+  }
+  .note b {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 600;
+    color: var(--gold);
+    margin-right: .35rem;
+  }
+  .entry .note + .note { margin-top: .75rem; }
 
-    .timeline {
-      display: grid;
-      gap: 20px;
-    }
+  /* ---------- pipeline ---------- */
+  .pipeline {
+    list-style: none;
+    margin: 1.75rem 0 1rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .35rem;
+    max-width: 38rem;
+  }
+  .pipeline li { padding: 0; margin: 0; display: flex; align-items: center; }
+  .pipeline li::before { display: none; }
+  .pipeline li + li::after { content: none; }
+  .stage {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .45rem .85rem;
+    border: 1px solid var(--gold-soft);
+    border-radius: 999px;
+    font-size: .95rem;
+    color: var(--muted);
+    transition: background .3s, color .3s, border-color .3s, box-shadow .3s;
+  }
+  .stage .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--gold-soft);
+    transition: background .3s, box-shadow .3s;
+  }
+  .join {
+    color: var(--gold-soft);
+    padding: 0 .1rem;
+    font-family: var(--serif);
+  }
+  .stage.on {
+    color: var(--night);
+    background: var(--moon);
+    border-color: var(--moon);
+    box-shadow: 0 0 22px rgba(244, 234, 208, .35);
+  }
+  .stage.on .dot { background: var(--ember); box-shadow: 0 0 8px var(--ember); }
+  .stage[data-led].on .dot { animation: led 0.9s steps(1) infinite; }
+  @keyframes led {
+    0%   { background: var(--led-a); box-shadow: 0 0 10px var(--led-a); }
+    33%  { background: var(--led-b); box-shadow: 0 0 10px var(--led-b); }
+    66%  { background: var(--led-c); box-shadow: 0 0 10px var(--led-c); }
+  }
+  .stage[data-servo].on .dot { animation: nudge .6s ease-in-out infinite alternate; }
+  @keyframes nudge {
+    from { transform: translateX(-3px); }
+    to   { transform: translateX(3px); }
+  }
 
-    .card {
-      background: linear-gradient(
-        145deg,
-        var(--card),
-        var(--card-2)
-      );
+  .sim {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: .5rem;
+    padding: .7rem 1.3rem;
+    font: 700 1rem var(--sans);
+    color: var(--night);
+    background: var(--gold);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .2s;
+  }
+  .sim:hover { box-shadow: 0 0 24px rgba(224, 176, 79, .5); }
+  .sim:active { transform: scale(.97); }
+  .sim[disabled] { opacity: .6; cursor: progress; }
+  :focus-visible { outline: 3px solid var(--moon); outline-offset: 3px; }
+  .status {
+    margin: .9rem 0 0;
+    min-height: 1.7em;
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+  }
 
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 28px;
+  /* ---------- what we learned ---------- */
+  .dawn {
+    padding: 5rem 0 3rem;
+    text-align: left;
+  }
+  .dawn h2 { font-size: clamp(2rem, 5vw, 3rem); }
+  .dawn p { max-width: 38rem; margin: 0 0 1.2rem; }
+  blockquote {
+    margin: 2.5rem 0 0;
+    padding: 0;
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.6rem, 4.5vw, 2.5rem);
+    line-height: 1.25;
+    color: var(--moon);
+    max-width: 30rem;
+    font-variation-settings: "opsz" 96;
+  }
+  footer {
+    padding: 2.5rem 0 3.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: .95rem;
+  }
 
-      box-shadow:
-        0 12px 35px rgba(0, 0, 0, 0.2);
-    }
-
-    .hour {
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-
-    h2 {
-      margin: 0 0 15px;
-      font-size: 1.45rem;
-    }
-
-    p {
-      margin: 10px 0;
-    }
-
-    .label {
-      color: var(--text);
-      font-weight: 700;
-    }
-
-    ul {
-      margin: 12px 0;
-      padding-left: 22px;
-      color: var(--muted);
-    }
-
-    .lesson,
-    .key-fix {
-      margin-top: 18px;
-      padding: 14px 16px;
-
-      border-left: 3px solid var(--accent);
-
-      background: rgba(209, 154, 102, 0.07);
-      border-radius: 8px;
-    }
-
-    .lesson strong,
-    .key-fix strong {
-      color: var(--accent);
-    }
-
-    .flow {
-      margin: 16px 0;
-      padding: 18px;
-
-      border-radius: 12px;
-      background: #0b1224;
-      border: 1px solid var(--line);
-
-      text-align: center;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-    }
-
-    .takeaway {
-      margin-top: 45px;
-      padding: 32px;
-
-      border-radius: 20px;
-
-      background: linear-gradient(
-        145deg,
-        #181f34,
-        #0f1628
-      );
-
-      border: 1px solid var(--line);
-    }
-
-    .takeaway h2 {
-      font-size: 1.8rem;
-      margin-bottom: 15px;
-    }
-
-    .quote {
-      margin-top: 22px;
-      padding: 20px;
-
-      border-left: 4px solid var(--accent);
-
-      color: var(--text);
-      font-size: 1.08rem;
-      font-style: italic;
-    }
-
-    @media (max-width: 600px) {
-
-      .container {
-        padding: 35px 0;
-      }
-
-      .card,
-      .takeaway {
-        padding: 22px;
-      }
-
-    }
-  </style>
+  /* ---------- responsive ---------- */
+  @media (max-width: 800px) {
+    .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 2.5rem; }
+    .cradle-stage { max-width: 17rem; order: -1; }
+    .entry { padding-left: 3rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .swing, .ring, .star, .stage .dot { animation: none !important; }
+    .ring { opacity: .25; }
+  }
+</style>
 </head>
-
 <body>
-
-  <main class="container">
-
-    <!-- HEADER -->
-    <header>
-
-      <div class="eyebrow">
-        Project Development Journey
-      </div>
-
-      <h1>
-        Problems We Faced
-      </h1>
-
-      <p class="intro">
-        Building our project wasn't a straight line from idea to
-        working prototype. As CS students stepping into hardware,
-        every working component came with a little debugging adventure.
-      </p>
-
-    </header>
-
-
-    <!-- TIMELINE -->
-    <section class="timeline">
-
-
-      <!-- HOUR 01 -->
-      <article class="card">
-
-        <div class="hour">
-          Hour 01
-        </div>
-
-        <h2>
-          Entering the Hardware World
-        </h2>
-
-        <p>
-          Our team comes from a CS background, so working with sensors,
-          motors, GPIO pins, external power supplies and physical wiring
-          was completely new territory.
-        </p>
-
-        <p>
-          Unlike software debugging, where an error usually points
-          somewhere in the code, hardware debugging meant checking
-          wires, voltages, grounds and connections one by one.
-        </p>
-
-        <p>
-          <span class="label">Challenge:</span>
-          Understanding how software and hardware actually communicate.
-        </p>
-
-      </article>
-
-
-      <!-- HOUR 03 -->
-      <article class="card">
-
-        <div class="hour">
-          Hour 03
-        </div>
-
-        <h2>
-          The Silent Microphone
-        </h2>
-
-        <p>
-          The INMP441 microphone was connected, but the ESP32 wasn't
-          receiving meaningful audio data. The Serial Monitor remained
-          almost flat even when we made loud noises around the microphone.
-        </p>
-
-        <p>
-          We went through the usual suspects:
-        </p>
-
-        <ul>
-          <li>Wiring and pin connections</li>
-          <li>I2S configuration</li>
-          <li>Sample rate</li>
-          <li>Input data configuration</li>
-          <li>Serial output</li>
-        </ul>
-
-        <p>
-          After several rounds of testing and debugging, the microphone
-          finally started responding correctly.
-        </p>
-
-        <div class="lesson">
-
-          <strong>Lesson:</strong>
-          In hardware, “the code is running” doesn't necessarily mean
-          “the system is working.”
-
-        </div>
-
-      </article>
-
-
-      <!-- HOUR 06 -->
-      <article class="card">
-
-        <div class="hour">
-          Hour 06
-        </div>
-
-        <h2>
-          The Servo That Refused to Move
-        </h2>
-
-        <p>
-          Next came the servo motor. The code was being executed,
-          the servo was connected, but the motor wasn't behaving reliably.
-        </p>
-
-        <p>
-          After tracing the power and signal connections, we found
-          the actual problem: the external power supply and ESP32
-          didn't share a common ground.
-        </p>
-
-        <p>
-          Once the servo power GND was connected to the ESP32 GND,
-          the servo immediately started responding as expected.
-        </p>
-
-        <div class="key-fix">
-
-          <strong>Key Fix:</strong>
-          Common ground between the external power supply and ESP32.
-
-        </div>
-
-        <div class="lesson">
-
-          <strong>Lesson:</strong>
-          Sometimes the bug isn't in the code. It's literally in the ground.
-
-        </div>
-
-      </article>
-
-
-      <!-- HOUR 10 -->
-      <article class="card">
-
-        <div class="hour">
-          Hour 10
-        </div>
-
-        <h2>
-          Lights, Sound &amp; Integration
-        </h2>
-
-        <p>
-          Once the individual components started working, the next
-          challenge was making them work together.
-        </p>
-
-        <p>
-          We integrated:
-        </p>
-
-        <ul>
-          <li>RGB LED effects</li>
-          <li>Cry-detection trigger</li>
-          <li>Servo movement</li>
-          <li>Music/lullaby playback</li>
-        </ul>
-
-        <p>
-          The difficulty wasn't getting each component to work
-          individually. It was coordinating them without one process
-          interfering with another.
-        </p>
-
-        <p>
-          We had to think about timing, triggering and how multiple
-          hardware actions should respond to a single cry-detection event.
-        </p>
-
-        <p>
-          <span class="label">Challenge:</span>
-          Turning independent components into one coordinated system.
-        </p>
-
-      </article>
-
-
-      <!-- HOUR 14 -->
-      <article class="card">
-
-        <div class="hour">
-          Hour 14
-        </div>
-
-        <h2>
-          Training the Brain
-        </h2>
-
-        <p>
-          Hardware was only half the battle. We also needed the system
-          to distinguish between a baby cry and non-cry sounds.
-        </p>
-
-        <p>
-          Training the ML model introduced a completely different
-          set of problems:
-        </p>
-
-        <ul>
-          <li>Collecting enough audio samples</li>
-          <li>Maintaining good-quality recordings</li>
-          <li>Correctly labeling cry and non-cry sounds</li>
-          <li>Reducing false detections</li>
-          <li>Keeping the model lightweight enough for ESP32 deployment</li>
-        </ul>
-
-        <p>
-          Getting a model that simply works is one thing. Getting one
-          that works reliably on a small embedded device is another.
-        </p>
-
-        <div class="lesson">
-
-          <strong>Lesson:</strong>
-          Good AI starts with good data, not just a fancy model.
-
-        </div>
-
-      </article>
-
-
-      <!-- HOUR 18 -->
-      <article class="card">
-
-        <div class="hour">
-          Hour 18
-        </div>
-
-        <h2>
-          From Individual Fixes to One System
-        </h2>
-
-        <p>
-          After debugging the microphone, servo, lighting, audio and
-          ML pipeline individually, we began connecting everything
-          into the final workflow.
-        </p>
-
-        <div class="flow">
-
-          Cry detected →
-          ESP32 processes the signal →
-          LCD responds →
-          servo activates →
-          RGB lights react →
-          music plays.
-
-        </div>
-
-        <p>
-          This was the point where our project stopped looking like
-          a collection of components and started behaving like an
-          actual system.
-        </p>
-
-      </article>
-
-    </section>
-
-
-    <!-- WHAT WE LEARNED -->
-    <section class="takeaway">
-
-      <h2>
-        What We Learned
-      </h2>
-
-      <p>
-        The biggest challenge wasn't any single component.
-        It was learning to move from software thinking to systems thinking.
-      </p>
-
-      <p>
-        We had to debug code, circuits, power, timing, machine learning
-        and hardware integration together.
-      </p>
-
-      <div class="quote">
-
-        And somewhere along the way, a group of CS students became
-        people who could look at a pile of wires and say:
-
-        “Okay. Let's find out why this isn't working.”
-
-      </div>
-
-    </section>
-
-  </main>
-
+<div class="sky" id="sky" aria-hidden="true"></div>
+<div class="stars" id="stars" aria-hidden="true"></div>
+
+<header class="hero">
+  <div>
+    <p class="brand">THARATTU.DROP() <span class="mal" lang="ml">താരാട്ട്</span></p>
+    <h1>Problems We Faced</h1>
+    <p class="lede">Building our project wasn't a straight line from idea to working prototype. As CS students stepping into hardware, every working component came with a little debugging adventure.</p>
+    <p class="gloss">Tharattu is the Malayalam word for a lullaby. Ours listens for a cry and rocks the cradle.</p>
+    <a class="scroll-hint" href="#hour-01">Follow the night, hour by hour ↓</a>
+  </div>
+
+  <div class="cradle-stage">
+    <svg viewBox="0 0 300 340" role="img" aria-label="A cradle hanging from a hook, swaying gently under a crescent moon">
+      <defs>
+        <mask id="crescent">
+          <rect width="300" height="340" fill="#fff"/>
+          <circle cx="252" cy="46" r="26" fill="#000"/>
+        </mask>
+        <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f0c26a"/>
+          <stop offset="1" stop-color="#b9772e"/>
+        </linearGradient>
+      </defs>
+
+      <circle cx="240" cy="58" r="30" fill="#f4ead0" mask="url(#crescent)"/>
+
+      <g>
+        <circle class="ring" cx="150" cy="225" r="60"/>
+        <circle class="ring" cx="150" cy="225" r="60"/>
+        <circle class="ring" cx="150" cy="225" r="60"/>
+      </g>
+
+      <line x1="150" y1="0" x2="150" y2="22" stroke="#e0b04f" stroke-width="3"/>
+      <g class="swing">
+        <circle cx="150" cy="22" r="6" fill="#e0b04f"/>
+        <line x1="150" y1="22" x2="84" y2="190" stroke="#e0b04f" stroke-width="2"/>
+        <line x1="150" y1="22" x2="216" y2="190" stroke="#e0b04f" stroke-width="2"/>
+        <path d="M76 178 Q150 152 224 178 L216 198 Q150 176 84 198 Z" fill="#f4ead0" opacity=".92"/>
+        <path d="M56 190 H244 Q244 262 150 274 Q56 262 56 190 Z" fill="url(#wood)"/>
+        <path d="M56 190 H244" stroke="#f4ead0" stroke-width="3" stroke-linecap="round"/>
+        <path d="M70 224 Q150 244 230 224" fill="none" stroke="#7a4a1c" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>
+        <path d="M104 244 Q150 254 196 244" fill="none" stroke="#7a4a1c" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>
+        <circle cx="150" cy="208" r="5" fill="#7a4a1c"/>
+      </g>
+    </svg>
+  </div>
+</header>
+
+<div class="kasavu" aria-hidden="true"></div>
+
+<main class="wrap">
+  <ol class="night">
+
+    <li class="entry" id="hour-01">
+      <span class="hour">Hour 01</span>
+      <h2>Entering the Hardware World</h2>
+      <p>Our team comes from a CS background, so working with sensors, motors, GPIO pins, external power supplies and physical wiring was completely new territory.</p>
+      <p>Unlike software debugging, where an error usually points somewhere in the code, hardware debugging meant checking wires, voltages, grounds and connections one by one.</p>
+      <p class="note"><b>Challenge</b>Understanding how software and hardware actually communicate.</p>
+    </li>
+
+    <li class="entry">
+      <span class="hour">Hour 03</span>
+      <h2>The Silent Microphone</h2>
+      <p>The INMP441 microphone was connected, but the ESP32 wasn't receiving meaningful audio data. The Serial Monitor remained almost flat even when we made loud noises around the microphone.</p>
+      <p>We went through the usual suspects:</p>
+      <ul>
+        <li>Wiring and pin connections</li>
+        <li>I2S configuration</li>
+        <li>Sample rate</li>
+        <li>Input data configuration</li>
+        <li>Serial output</li>
+      </ul>
+      <p>After several rounds of testing and debugging, the microphone finally started responding correctly.</p>
+      <p class="note"><b>Lesson</b>In hardware, “the code is running” doesn't necessarily mean “the system is working.”</p>
+    </li>
+
+    <li class="entry">
+      <span class="hour">Hour 06</span>
+      <h2>The Servo That Refused to Move</h2>
+      <p>Next came the servo motor. The code was being executed, the servo was connected, but the motor wasn't behaving reliably.</p>
+      <p>After tracing the power and signal connections, we found the actual problem: the external power supply and ESP32 didn't share a common ground.</p>
+      <p>Once the servo power GND was connected to the ESP32 GND, the servo immediately started responding as expected.</p>
+      <p class="note"><b>Key fix</b>Common ground between the external power supply and ESP32.</p>
+      <p class="note"><b>Lesson</b>Sometimes the bug isn't in the code. It's literally in the ground.</p>
+    </li>
+
+    <li class="entry">
+      <span class="hour">Hour 10</span>
+      <h2>Lights, Sound &amp; Integration</h2>
+      <p>Once the individual components started working, the next challenge was making them work together.</p>
+      <p>We integrated:</p>
+      <ul>
+        <li>RGB LED effects</li>
+        <li>Cry-detection trigger</li>
+        <li>Servo movement</li>
+        <li>Music/lullaby playback</li>
+      </ul>
+      <p>The difficulty wasn't getting each component to work individually. It was coordinating them without one process interfering with another.</p>
+      <p>We had to think about timing, triggering and how multiple hardware actions should respond to a single cry-detection event.</p>
+      <p class="note"><b>Challenge</b>Turning independent components into one coordinated system.</p>
+    </li>
+
+    <li class="entry">
+      <span class="hour">Hour 14</span>
+      <h2>Training the Brain</h2>
+      <p>Hardware was only half the battle. We also needed the system to distinguish between a baby cry and non-cry sounds.</p>
+      <p>Training the ML model introduced a completely different set of problems:</p>
+      <ul>
+        <li>Collecting enough audio samples</li>
+        <li>Maintaining good-quality recordings</li>
+        <li>Correctly labeling cry and non-cry sounds</li>
+        <li>Reducing false detections</li>
+        <li>Keeping the model lightweight enough for ESP32 deployment</li>
+      </ul>
+      <p>Getting a model that simply works is one thing. Getting one that works reliably on a small embedded device is another.</p>
+      <p class="note"><b>Lesson</b>Good AI starts with good data, not just a fancy model.</p>
+    </li>
+
+    <li class="entry">
+      <span class="hour">Hour 18</span>
+      <h2>From Individual Fixes to One System</h2>
+      <p>After debugging the microphone, servo, lighting, audio and ML pipeline individually, we began connecting everything into the final workflow.</p>
+
+      <ol class="pipeline" id="pipeline" aria-label="Cry detection workflow" style="list-style:none">
+        <li><span class="stage"><span class="dot"></span>Cry detected</span></li>
+        <li><span class="join" aria-hidden="true">→</span><span class="stage"><span class="dot"></span>ESP32 processes the signal</span></li>
+        <li><span class="join" aria-hidden="true">→</span><span class="stage"><span class="dot"></span>LCD responds</span></li>
+        <li><span class="join" aria-hidden="true">→</span><span class="stage" data-servo><span class="dot"></span>Servo activates</span></li>
+        <li><span class="join" aria-hidden="true">→</span><span class="stage" data-led><span class="dot"></span>RGB lights react</span></li>
+        <li><span class="join" aria-hidden="true">→</span><span class="stage"><span class="dot"></span>Music plays</span></li>
+      </ol>
+
+      <button class="sim" id="sim" type="button">Simulate a cry</button>
+      <p class="status" id="status" role="status" aria-live="polite">Waiting for a sound.</p>
+
+      <p>This was the point where our project stopped looking like a collection of components and started behaving like an actual system.</p>
+    </li>
+  </ol>
+
+  <section class="dawn" aria-labelledby="learned">
+    <h2 id="learned">What We Learned</h2>
+    <p>The biggest challenge wasn't any single component. It was learning to move from software thinking to systems thinking.</p>
+    <p>We had to debug code, circuits, power, timing, machine learning and hardware integration together.</p>
+    <p>And somewhere along the way, a group of CS students became people who could look at a pile of wires and say:</p>
+    <blockquote>“Okay. Let's find out why this isn't working.”</blockquote>
+  </section>
+</main>
+
+<div class="kasavu" aria-hidden="true"></div>
+<footer>THARATTU.DROP() · sleep well, little one</footer>
+
+<script>
+(function () {
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* stars */
+  var starsEl = document.getElementById("stars");
+  for (var i = 0; i < 70; i++) {
+    var s = document.createElement("span");
+    s.className = "star";
+    s.style.left = Math.random() * 100 + "%";
+    s.style.top = Math.random() * 100 + "%";
+    var size = Math.random() < .2 ? 3 : 2;
+    s.style.width = s.style.height = size + "px";
+    s.style.animationDelay = (Math.random() * 4).toFixed(2) + "s";
+    s.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + "s";
+    starsEl.appendChild(s);
+  }
+
+  /* sky moves from dusk to deep night to dawn as you scroll */
+  var sky = document.getElementById("sky");
+  var keys = [
+    { p: 0,    top: [12, 16, 48],  bot: [43, 32, 92] },
+    { p: 0.55, top: [7, 10, 36],   bot: [21, 26, 72] },
+    { p: 0.85, top: [30, 30, 84],  bot: [110, 62, 96] },
+    { p: 1,    top: [58, 46, 110], bot: [214, 130, 88] }
+  ];
+  function mix(a, b, t) {
+    return [0, 1, 2].map(function (i) { return Math.round(a[i] + (b[i] - a[i]) * t); });
+  }
+  function rgb(c) { return "rgb(" + c.join(",") + ")"; }
+  function paintSky() {
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    var p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    var a = keys[0], b = keys[keys.length - 1];
+    for (var i = 0; i < keys.length - 1; i++) {
+      if (p >= keys[i].p && p <= keys[i + 1].p) { a = keys[i]; b = keys[i + 1]; break; }
+    }
+    var t = b.p === a.p ? 0 : (p - a.p) / (b.p - a.p);
+    var root = document.documentElement.style;
+    root.setProperty("--sky-top", rgb(mix(a.top, b.top, t)));
+    root.setProperty("--sky-bottom", rgb(mix(a.bot, b.bot, t)));
+    starsEl.style.opacity = String(Math.max(0, 1 - Math.max(0, p - 0.8) / 0.2));
+  }
+  paintSky();
+  window.addEventListener("scroll", paintSky, { passive: true });
+  window.addEventListener("resize", paintSky);
+
+  /* cry simulation */
+  var btn = document.getElementById("sim");
+  var status = document.getElementById("status");
+  var stages = document.querySelectorAll("#pipeline .stage");
+  var messages = [
+    "Cry detected by the microphone.",
+    "ESP32 is processing the signal.",
+    "LCD is showing the alert.",
+    "Servo is rocking the cradle.",
+    "RGB lights are blinking.",
+    "Lullaby is playing."
+  ];
+  var running = false;
+
+  function reset() {
+    stages.forEach(function (el) { el.classList.remove("on"); });
+  }
+  btn.addEventListener("click", function () {
+    if (running) return;
+    running = true;
+    btn.disabled = true;
+    reset();
+    var step = 0;
+    var gap = reduce ? 250 : 750;
+    (function next() {
+      if (step < stages.length) {
+        stages[step].classList.add("on");
+        status.textContent = messages[step];
+        step++;
+        setTimeout(next, gap);
+      } else {
+        status.textContent = "All stages running together. Sleep well, little one.";
+        setTimeout(function () {
+          reset();
+          status.textContent = "Waiting for a sound.";
+          btn.disabled = false;
+          running = false;
+        }, 3500);
+      }
+    })();
+  });
+})();
+</script>
 </body>
 </html>
