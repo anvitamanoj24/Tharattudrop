@@ -3,25 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Problems We Faced · THARATTU.DROP()</title>
-<meta name="description" content="The debugging journey behind THARATTU.DROP(): an ESP32 lullaby cradle that rocks when it hears a baby cry.">
+<title>THARATTU.DROP()</title>
+<meta name="description" content="Debugging the cries, dropping the beats, and overengineering bedtime since day one!">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Nunito+Sans:wght@400;600;700&family=Noto+Serif+Malayalam:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Nunito+Sans:wght@400;600;700&family=Noto+Serif+Malayalam:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --night: #0c1030;
-    --indigo: #1a1f4d;
-    --dusk: #2b2a63;
     --moon: #f4ead0;
     --text: #e9e4d4;
     --muted: #a9a8c9;
     --gold: #e0b04f;
     --gold-soft: rgba(224, 176, 79, .35);
     --ember: #f0894a;
-    --led-a: #ff6b8b;
-    --led-b: #6be3a5;
-    --led-c: #7aa8ff;
+    --led-a: #ff5c8a;
+    --led-b: #4fe3a0;
+    --led-c: #6a9dff;
     --sky-top: #0c1030;
     --sky-bottom: #241c55;
     --serif: "Fraunces", Georgia, "Times New Roman", serif;
@@ -39,26 +37,26 @@
     font-size: 1.0625rem;
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
+  :focus-visible { outline: 3px solid var(--moon); outline-offset: 3px; }
 
-  /* ---------- sky ---------- */
+  /* ---------- sky, stars, party lights ---------- */
   .sky {
     position: fixed;
     inset: 0;
-    z-index: -2;
+    z-index: -3;
     background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
   }
   .stars {
     position: fixed;
     inset: 0;
-    z-index: -1;
+    z-index: -2;
     pointer-events: none;
     transition: opacity .4s linear;
   }
   .star {
     position: absolute;
-    width: 2px;
-    height: 2px;
     border-radius: 50%;
     background: var(--moon);
     opacity: .7;
@@ -68,81 +66,127 @@
     0%, 100% { opacity: .25; }
     50% { opacity: .9; }
   }
+  .lights {
+    position: fixed;
+    inset: -10%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+    background:
+      radial-gradient(circle at 18% 28%, var(--led-a) 0, transparent 34%),
+      radial-gradient(circle at 82% 18%, var(--led-c) 0, transparent 36%),
+      radial-gradient(circle at 52% 92%, var(--led-b) 0, transparent 38%);
+    transition: opacity .7s;
+  }
+  .party .lights {
+    opacity: .3;
+    animation: sweep 8s linear infinite;
+  }
+  @keyframes sweep {
+    from { filter: hue-rotate(0deg); transform: rotate(0deg) scale(1.1); }
+    to   { filter: hue-rotate(360deg); transform: rotate(360deg) scale(1.1); }
+  }
 
   /* ---------- kasavu border ---------- */
   .kasavu {
     height: 12px;
     border-top: 2px solid var(--gold);
     border-bottom: 2px solid var(--gold);
-    background:
-      repeating-linear-gradient(90deg, var(--gold) 0 2px, transparent 2px 9px) center / 100% 4px no-repeat;
+    background: repeating-linear-gradient(90deg, var(--gold) 0 2px, transparent 2px 9px) center / 100% 4px no-repeat;
     opacity: .85;
   }
 
-  /* ---------- layout ---------- */
   .wrap {
     width: min(100% - 2.5rem, 46rem);
     margin-inline: auto;
   }
 
+  /* ---------- party switch ---------- */
+  .party-switch {
+    position: fixed;
+    top: .9rem;
+    right: .9rem;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .5rem .95rem;
+    font: 700 .9rem var(--sans);
+    color: var(--moon);
+    background: rgba(12, 16, 48, .7);
+    border: 1px solid var(--gold-soft);
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .party-switch:hover { border-color: var(--gold); }
+  .party-switch .bulb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--gold-soft);
+  }
+  .party-switch[aria-pressed="true"] { border-color: var(--led-a); box-shadow: 0 0 22px rgba(255, 92, 138, .4); }
+  .party-switch[aria-pressed="true"] .bulb { animation: led .9s steps(1) infinite; }
+
   /* ---------- hero ---------- */
   .hero {
     width: min(100% - 2.5rem, 68rem);
     margin-inline: auto;
-    padding: 4rem 0 3.5rem;
+    padding: 4.5rem 0 3.5rem;
     display: grid;
-    grid-template-columns: 1.15fr .85fr;
+    grid-template-columns: 1.2fr .8fr;
     gap: 2rem;
     align-items: center;
     min-height: 92vh;
   }
-  .brand {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: .25rem 1rem;
-    margin: 0 0 1.5rem;
-    font-family: var(--serif);
-    font-weight: 600;
-    letter-spacing: .04em;
+  .kicker {
+    margin: 0 0 1rem;
     color: var(--gold);
-    font-size: 1.05rem;
-  }
-  .brand .mal {
-    font-family: var(--mal);
-    font-weight: 500;
-    letter-spacing: 0;
-    color: var(--moon);
-    opacity: .8;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.1rem;
   }
   h1 {
     margin: 0 0 1.5rem;
     font-family: var(--serif);
-    font-weight: 600;
-    font-size: clamp(2.8rem, 8vw, 5.6rem);
-    line-height: .98;
-    letter-spacing: -.02em;
+    font-weight: 700;
+    font-size: clamp(2.1rem, 5.6vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -.01em;
     color: var(--moon);
     font-variation-settings: "opsz" 144;
+    overflow-wrap: anywhere;
   }
-  .lede {
+  .party h1 { animation: neon 1.3s ease-in-out infinite alternate; }
+  @keyframes neon {
+    from { text-shadow: 0 0 18px rgba(255, 92, 138, .6), 0 0 42px rgba(106, 157, 255, .35); }
+    to   { text-shadow: 0 0 18px rgba(79, 227, 160, .6), 0 0 42px rgba(255, 92, 138, .35); }
+  }
+  .tagline {
     max-width: 30rem;
-    margin: 0 0 1.75rem;
-    color: var(--text);
-    font-size: 1.15rem;
-  }
-  .gloss {
-    margin: 0;
-    color: var(--muted);
+    margin: 0 0 2rem;
     font-family: var(--serif);
     font-style: italic;
-    font-size: 1rem;
+    font-weight: 400;
+    font-size: clamp(1.25rem, 2.6vw, 1.6rem);
+    line-height: 1.4;
+    color: var(--text);
   }
+  .scroll-hint {
+    display: inline-block;
+    color: var(--muted);
+    font-size: .95rem;
+    text-decoration: none;
+  }
+  .scroll-hint:hover, .scroll-hint:focus-visible { color: var(--moon); }
 
   .cradle-stage {
-    position: relative;
     width: 100%;
-    max-width: 26rem;
+    max-width: 24rem;
     justify-self: center;
   }
   .cradle-stage svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -150,6 +194,7 @@
     transform-origin: 150px 22px;
     animation: rock 3.2s ease-in-out infinite alternate;
   }
+  .party .swing { animation-duration: 1s; }
   @keyframes rock {
     from { transform: rotate(-8deg); }
     to   { transform: rotate(8deg); }
@@ -165,35 +210,118 @@
   }
   .ring:nth-of-type(2) { animation-delay: 1.8s; }
   .ring:nth-of-type(3) { animation-delay: 3.6s; }
+  .party .ring { animation-duration: 1.8s; animation-name: ripple, ringcolor; }
+  .party .ring:nth-of-type(2) { animation-delay: .6s; }
+  .party .ring:nth-of-type(3) { animation-delay: 1.2s; }
   @keyframes ripple {
-    0%   { transform: scale(.55); opacity: .0; }
-    12%  { opacity: .55; }
+    0%   { transform: scale(.55); opacity: 0; }
+    12%  { opacity: .6; }
     100% { transform: scale(1.7); opacity: 0; }
   }
-
-  .scroll-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: .6rem;
-    margin-top: 2.5rem;
-    color: var(--muted);
-    font-size: .95rem;
-    text-decoration: none;
+  @keyframes ringcolor {
+    0%   { stroke: var(--led-a); }
+    33%  { stroke: var(--led-b); }
+    66%  { stroke: var(--led-c); }
+    100% { stroke: var(--led-a); }
   }
-  .scroll-hint:hover, .scroll-hint:focus-visible { color: var(--moon); }
 
-  /* ---------- night timeline ---------- */
+  /* ---------- description ---------- */
+  .desc { padding: 4.5rem 0 1rem; }
+  .desc p { margin: 0 0 1.4rem; max-width: 38rem; }
+  .desc .proverb {
+    font-family: var(--serif);
+    font-size: clamp(1.3rem, 3vw, 1.65rem);
+    line-height: 1.5;
+    color: var(--moon);
+  }
+  .desc .proverb .mal {
+    display: block;
+    margin: .8rem 0;
+    padding-left: 1.1rem;
+    border-left: 3px solid var(--gold);
+    font-family: var(--mal);
+    font-weight: 500;
+    font-size: 1.15em;
+    line-height: 1.6;
+    color: var(--gold);
+  }
+  .desc .pull {
+    margin: 2.5rem 0;
+    padding: 1.4rem 0;
+    max-width: 38rem;
+    border-top: 1px solid var(--gold-soft);
+    border-bottom: 1px solid var(--gold-soft);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.4rem, 3.4vw, 1.9rem);
+    line-height: 1.35;
+    color: var(--moon);
+  }
+  .desc .closing {
+    margin: 3rem 0 0;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    line-height: 1.15;
+    color: var(--moon);
+    letter-spacing: -.01em;
+  }
+
+  /* equalizer */
+  .eq {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 64px;
+    max-width: 38rem;
+    margin: 1.5rem 0 0;
+  }
+  .eq span {
+    flex: 1;
+    height: 100%;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(180deg, var(--ember), var(--gold));
+    transform: scaleY(.12);
+    transform-origin: bottom;
+    transition: transform .4s;
+  }
+  .party .eq span, .eq.active span { animation: beat 0.7s ease-in-out infinite alternate; }
+  .party .eq, .eq.active { animation: hue 4s linear infinite; }
+  @keyframes beat {
+    from { transform: scaleY(.15); }
+    to   { transform: scaleY(1); }
+  }
+  @keyframes hue {
+    from { filter: hue-rotate(0deg); }
+    to   { filter: hue-rotate(360deg); }
+  }
+
+  /* ---------- problems section ---------- */
+  .problems-head { padding: 5rem 0 0; }
+  .problems-head .kicker { margin-bottom: .6rem; }
+  h2.big {
+    margin: 0 0 1.2rem;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    color: var(--moon);
+    font-variation-settings: "opsz" 144;
+  }
+  .problems-head p { margin: 0; max-width: 38rem; font-size: 1.15rem; }
+
   .night {
     list-style: none;
     margin: 0;
-    padding: 4rem 0 2rem;
+    padding: 3rem 0 2rem;
     position: relative;
   }
   .night::before {
     content: "";
     position: absolute;
     left: 13px;
-    top: 4rem;
+    top: 3rem;
     bottom: 2rem;
     width: 2px;
     background: linear-gradient(180deg, transparent, var(--gold-soft) 6%, var(--gold-soft) 94%, transparent);
@@ -252,7 +380,6 @@
     background: var(--gold);
     transform: rotate(45deg);
   }
-
   .entry .note {
     max-width: 38rem;
     margin: 1.5rem 0 0;
@@ -262,16 +389,16 @@
     background: rgba(244, 234, 208, .06);
     color: var(--moon);
   }
+  .entry .note + .note { margin-top: .75rem; }
   .note b {
     font-family: var(--serif);
     font-style: italic;
     font-weight: 600;
     color: var(--gold);
-    margin-right: .35rem;
+    margin-right: .5rem;
   }
-  .entry .note + .note { margin-top: .75rem; }
 
-  /* ---------- pipeline ---------- */
+  /* pipeline */
   .pipeline {
     list-style: none;
     margin: 1.75rem 0 1rem;
@@ -283,7 +410,6 @@
   }
   .pipeline li { padding: 0; margin: 0; display: flex; align-items: center; }
   .pipeline li::before { display: none; }
-  .pipeline li + li::after { content: none; }
   .stage {
     display: inline-flex;
     align-items: center;
@@ -302,11 +428,7 @@
     background: var(--gold-soft);
     transition: background .3s, box-shadow .3s;
   }
-  .join {
-    color: var(--gold-soft);
-    padding: 0 .1rem;
-    font-family: var(--serif);
-  }
+  .join { color: var(--gold-soft); padding: 0 .25rem 0 .1rem; font-family: var(--serif); }
   .stage.on {
     color: var(--night);
     background: var(--moon);
@@ -314,22 +436,20 @@
     box-shadow: 0 0 22px rgba(244, 234, 208, .35);
   }
   .stage.on .dot { background: var(--ember); box-shadow: 0 0 8px var(--ember); }
-  .stage[data-led].on .dot { animation: led 0.9s steps(1) infinite; }
+  .stage[data-led].on .dot { animation: led .9s steps(1) infinite; }
+  .stage[data-servo].on .dot { animation: nudge .6s ease-in-out infinite alternate; }
   @keyframes led {
     0%   { background: var(--led-a); box-shadow: 0 0 10px var(--led-a); }
     33%  { background: var(--led-b); box-shadow: 0 0 10px var(--led-b); }
     66%  { background: var(--led-c); box-shadow: 0 0 10px var(--led-c); }
   }
-  .stage[data-servo].on .dot { animation: nudge .6s ease-in-out infinite alternate; }
   @keyframes nudge {
     from { transform: translateX(-3px); }
     to   { transform: translateX(3px); }
   }
-
   .sim {
     display: inline-flex;
     align-items: center;
-    gap: .6rem;
     margin-top: .5rem;
     padding: .7rem 1.3rem;
     font: 700 1rem var(--sans);
@@ -343,20 +463,16 @@
   .sim:hover { box-shadow: 0 0 24px rgba(224, 176, 79, .5); }
   .sim:active { transform: scale(.97); }
   .sim[disabled] { opacity: .6; cursor: progress; }
-  :focus-visible { outline: 3px solid var(--moon); outline-offset: 3px; }
   .status {
-    margin: .9rem 0 0;
+    margin: .9rem 0 1.5rem;
     min-height: 1.7em;
     color: var(--muted);
     font-family: var(--serif);
     font-style: italic;
   }
 
-  /* ---------- what we learned ---------- */
-  .dawn {
-    padding: 5rem 0 3rem;
-    text-align: left;
-  }
+  /* dawn */
+  .dawn { padding: 4rem 0 3rem; }
   .dawn h2 { font-size: clamp(2rem, 5vw, 3rem); }
   .dawn p { max-width: 38rem; margin: 0 0 1.2rem; }
   blockquote {
@@ -376,34 +492,36 @@
     text-align: center;
     color: var(--muted);
     font-family: var(--serif);
-    font-style: italic;
     font-size: .95rem;
+    letter-spacing: .04em;
   }
 
-  /* ---------- responsive ---------- */
   @media (max-width: 800px) {
-    .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 2.5rem; }
-    .cradle-stage { max-width: 17rem; order: -1; }
+    .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 4rem; }
+    .cradle-stage { max-width: 15rem; order: -1; }
     .entry { padding-left: 3rem; }
   }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .swing, .ring, .star, .stage .dot { animation: none !important; }
+    .swing, .ring, .star, .stage .dot, .party h1, .party .lights, .eq, .eq span { animation: none !important; }
     .ring { opacity: .25; }
+    .party .eq span { transform: scaleY(.6); }
   }
 </style>
 </head>
 <body>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="stars" id="stars" aria-hidden="true"></div>
+<div class="lights" aria-hidden="true"></div>
+
+<button class="party-switch" id="party" type="button" aria-pressed="false"><span class="bulb" aria-hidden="true"></span>Party mode</button>
 
 <header class="hero">
   <div>
-    <p class="brand">THARATTU.DROP() <span class="mal" lang="ml">താരാട്ട്</span></p>
-    <h1>Problems We Faced</h1>
-    <p class="lede">Building our project wasn't a straight line from idea to working prototype. As CS students stepping into hardware, every working component came with a little debugging adventure.</p>
-    <p class="gloss">Tharattu is the Malayalam word for a lullaby. Ours listens for a cry and rocks the cradle.</p>
-    <a class="scroll-hint" href="#hour-01">Follow the night, hour by hour ↓</a>
+    <p class="kicker">Project Description</p>
+    <h1>THARATTU.DROP()</h1>
+    <p class="tagline">Debugging the cries, dropping the beats, and overengineering bedtime since day one!</p>
+    <a class="scroll-hint" href="#story">Read the story ↓</a>
   </div>
 
   <div class="cradle-stage">
@@ -445,10 +563,34 @@
 
 <div class="kasavu" aria-hidden="true"></div>
 
-<main class="wrap">
+<main class="wrap" id="story">
+
+  <section class="desc" aria-label="Project description">
+    <p class="proverb">You know the old saying,
+      <span class="mal" lang="ml">“അമ്മയ്ക്ക് പ്രാണ വേദന മകന് വീണ വായന”</span>
+      Yeah, we flipped it. Most cradles work hard to keep the baby comfy, but we were like: why should babies have all the fun? 😏</p>
+
+    <p class="pull">So here's the deal. Baby cries, cradle rocks, lights flash, music kicks in, and Mom finally gets her main-character moment.</p>
+
+    <p>Yes, it's a lot for a cradle. There's a mic that knows a “Waaah!” when it hears one, a servo doing all the rocking so Mom doesn't have to, and LEDs flashing like it's a club and not a nursery. Throw in music, a totally unnecessary party mode, cloud sync (because every cry deserves a timestamp), and a DJ-style dashboard to run the whole show.</p>
+
+    <p>Is all this needed to rock a baby? Probably not. But that was never the point. Why build something simple when you can overengineer it?</p>
+
+    <p>From tiny cries to big innovation, THARATTU.DROP() doesn't just rock the cradle. It reimagines the rhythm of parenting. We didn't just build a cradle. We gave parenting a firmware upgrade. A little “Waaah!” became a whole lot of “WOW!” and we wired up a whole vibe. ✨</p>
+
+    <p class="closing">Because moms deserve the beat drop, too!</p>
+    <div class="eq" id="eq" aria-hidden="true"></div>
+  </section>
+
+  <section class="problems-head" aria-labelledby="problems">
+    <p class="kicker">Project Development Journey</p>
+    <h2 class="big" id="problems">Problems We Faced</h2>
+    <p>Building our project wasn't a straight line from idea to working prototype. As CS students stepping into hardware, every working component came with a little debugging adventure.</p>
+  </section>
+
   <ol class="night">
 
-    <li class="entry" id="hour-01">
+    <li class="entry">
       <span class="hour">Hour 01</span>
       <h2>Entering the Hardware World</h2>
       <p>Our team comes from a CS background, so working with sensors, motors, GPIO pins, external power supplies and physical wiring was completely new territory.</p>
@@ -519,7 +661,7 @@
       <h2>From Individual Fixes to One System</h2>
       <p>After debugging the microphone, servo, lighting, audio and ML pipeline individually, we began connecting everything into the final workflow.</p>
 
-      <ol class="pipeline" id="pipeline" aria-label="Cry detection workflow" style="list-style:none">
+      <ol class="pipeline" id="pipeline" aria-label="Cry detection workflow">
         <li><span class="stage"><span class="dot"></span>Cry detected</span></li>
         <li><span class="join" aria-hidden="true">→</span><span class="stage"><span class="dot"></span>ESP32 processes the signal</span></li>
         <li><span class="join" aria-hidden="true">→</span><span class="stage"><span class="dot"></span>LCD responds</span></li>
@@ -545,7 +687,7 @@
 </main>
 
 <div class="kasavu" aria-hidden="true"></div>
-<footer>THARATTU.DROP() · sleep well, little one</footer>
+<footer>THARATTU.DROP()</footer>
 
 <script>
 (function () {
@@ -556,17 +698,25 @@
   for (var i = 0; i < 70; i++) {
     var s = document.createElement("span");
     s.className = "star";
-    s.style.left = Math.random() * 100 + "%";
-    s.style.top = Math.random() * 100 + "%";
     var size = Math.random() < .2 ? 3 : 2;
     s.style.width = s.style.height = size + "px";
+    s.style.left = Math.random() * 100 + "%";
+    s.style.top = Math.random() * 100 + "%";
     s.style.animationDelay = (Math.random() * 4).toFixed(2) + "s";
     s.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + "s";
     starsEl.appendChild(s);
   }
 
-  /* sky moves from dusk to deep night to dawn as you scroll */
-  var sky = document.getElementById("sky");
+  /* equalizer bars */
+  var eq = document.getElementById("eq");
+  for (var j = 0; j < 32; j++) {
+    var bar = document.createElement("span");
+    bar.style.animationDelay = (-Math.random() * 0.7).toFixed(2) + "s";
+    bar.style.animationDuration = (0.45 + Math.random() * 0.5).toFixed(2) + "s";
+    eq.appendChild(bar);
+  }
+
+  /* sky: dusk to deep night to dawn */
   var keys = [
     { p: 0,    top: [12, 16, 48],  bot: [43, 32, 92] },
     { p: 0.55, top: [7, 10, 36],   bot: [21, 26, 72] },
@@ -593,6 +743,13 @@
   paintSky();
   window.addEventListener("scroll", paintSky, { passive: true });
   window.addEventListener("resize", paintSky);
+
+  /* party mode */
+  var partyBtn = document.getElementById("party");
+  partyBtn.addEventListener("click", function () {
+    var on = document.body.classList.toggle("party");
+    partyBtn.setAttribute("aria-pressed", String(on));
+  });
 
   /* cry simulation */
   var btn = document.getElementById("sim");
@@ -625,7 +782,7 @@
         step++;
         setTimeout(next, gap);
       } else {
-        status.textContent = "All stages running together. Sleep well, little one.";
+        status.textContent = "All stages running together.";
         setTimeout(function () {
           reset();
           status.textContent = "Waiting for a sound.";
