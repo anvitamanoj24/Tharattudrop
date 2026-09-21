@@ -15,12 +15,21 @@
 
 ## Project Description
 
-An ESP32-powered smart cradle that listens for a baby's cry and responds in the most unnecessarily entertaining way possible. It rocks the cradle, flashes LEDs, and turns a connected device into a DJ dashboard with pulsing visuals and music.
-What if a baby’s cry didn’t mean *“here we go again”*, but *“DJ, drop the beat!”*?
-Inspired by the Malayalam proverb *“അമ്മയ്ക്ക് പ്രാണ വേദന, മകനു വീണ വായന”*, Tharattu.Drop() is the flipped version of the proverb. When the baby cries, the cradle detects it, starts rocking, and drops a DJ beat to give the mother an unexpected energy boost.
-We took a traditional lullaby moment and gave it an unnecessarily over-engineered Gen-Z upgrade: *baby cries → cradle rocks → DJ drops → mom gets the vibe.*
-While the baby cries, mother vibes the beat!!
-The baby gets rocked. The mother gets a rave.
+THARATTU.DROP()
+
+Debugging the cries, dropping the beats, and overengineering bedtime since day one!
+
+You know the old saying, “അമ്മയ്ക്ക് പ്രാണ വേദന മകന് വീണ വായന”? Yeah, we flipped it. Most cradles work hard to keep the baby comfy, but we were like: why should babies have all the fun? 😏
+
+So here's the deal. Baby cries, cradle rocks, lights flash, music kicks in, and Mom finally gets her main-character moment. 
+
+Yes, it's a lot for a cradle. There's a mic that knows a “Waaah!” when it hears one, a servo doing all the rocking so Mom doesn't have to, and LEDs flashing like it's a club and not a nursery. Throw in music, a totally unnecessary party mode, cloud sync (because every cry deserves a timestamp), and a DJ-style dashboard to run the whole show. 
+
+Is all this needed to rock a baby? Probably not. But that was never the point. Why build something simple when you can overengineer it?
+
+From tiny cries to big innovation, THARATTU.DROP() doesn't just rock the cradle. It reimagines the rhythm of parenting. We didn't just build a cradle. We gave parenting a firmware upgrade. A little “Waaah!” became a whole lot of “WOW!” and we wired up a whole vibe. ✨
+
+Because moms deserve the beat drop, too! 
 
 ---
 
