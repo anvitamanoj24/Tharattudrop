@@ -23,6 +23,11 @@ While the baby cries, mother vibes the beat!!
 The baby gets rocked. The mother gets a rave.
 
 ---
+
+## Cover Image
+
+https://drive.google.com/file/d/1uGsn6abz9OCHnQWggn136lbmQW8P8fGu/view?usp=sharing
+
 ## The Problem 
 
 Babies cry. Mothers hear them, walk over, and rock them back to sleep.
